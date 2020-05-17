@@ -1,6 +1,9 @@
 var canvas = document.getElementById("boardCanvas");
 var ctx = canvas.getContext("2d");
 
+var canvasControl = document.getElementById("controlCanvas");
+var ctxControl = canvasControl.getContext("2d");
+
 var fieldValue = {
     empty: 0,
     wall: 1,
@@ -37,9 +40,11 @@ var colourMap = {
 }
 
 class Level{
-  constructor(levelId, board) {
+  constructor(levelId, board, code, squareSize) {
     this.levelId = levelId;
     this.board = board;
+    this.code = code;
+    this.squareSize = squareSize;
   }
 }
 
@@ -51,9 +56,9 @@ class FieldLocation{
 }
 
 levels = [];
-currentLevelId = 9;
+currentLevelId = 0;
 currentBoard = [0][0];
-squareSize = 40;
+squareSize = 50;
 
 function loadLevels(){
     mapsLines = maps.split('\n');
@@ -67,6 +72,7 @@ function loadLevels(){
         board=[];
         width = parseInt(size[0]);
         height = parseInt(size[1]);
+        squareSize = Math.round(Math.min(canvas.width/width, canvas.height/height));
         for(var h = 0; h < height; h++){
             line = mapsLines[lineNumber];
             lineFields = [];
@@ -76,13 +82,15 @@ function loadLevels(){
             board.push(lineFields);
             lineNumber++;
         }
-        levels.push(new Level(levelId, board));
+        levels.push(new Level(levelId, board, code, squareSize));
         levelId++;
     }
 }
 
 function setLevel(){
-    boardToCopy = levels[currentLevelId].board;
+    level = levels[currentLevelId];
+    boardToCopy = level.board;
+    squareSize = level.squareSize;
     currentBoard = [];
     for(var h = 0; h < boardToCopy.length; h++){
         currentBoard.push([]);
@@ -114,6 +122,67 @@ function draw(){
         }
     }
 }
+
+var canvasControlLeft = canvasControl.offsetLeft + canvasControl.clientLeft,
+canvasControlTop = canvasControl.offsetTop + canvasControl.clientTop,
+    buttons = [];
+
+canvasControl.addEventListener('click', function(event) {
+    var x = event.pageX - canvasControlLeft,
+        y = event.pageY - canvasControlTop;
+
+    // Collision detection between clicked offset and element.
+    buttons.forEach(function(button) {
+        if (y > button.top && y < button.top + button.height
+            && x > button.left && x < button.left + button.width) {
+            movePlayer(button.direction);
+        }
+    });
+
+}, false);
+
+// Add element.
+buttons.push({
+    colour: '#05EFFF',
+    width: 100,
+    height: 100,
+    top: 150,
+    left: 90,
+    direction: moveDirection.left
+});
+
+buttons.push({
+    colour: '#05EFFF',
+    width: 100,
+    height: 100,
+    top: 40,
+    left: 200,
+    direction: moveDirection.up
+});
+
+buttons.push({
+    colour: '#05EFFF',
+    width: 100,
+    height: 100,
+    top: 150,
+    left: 200,
+    direction: moveDirection.down
+});
+
+buttons.push({
+    colour: '#05EFFF',
+    width: 100,
+    height: 100,
+    top: 150,
+    left: 310,
+    direction: moveDirection.right
+});
+
+// Render elements.
+buttons.forEach(function(element) {
+    ctxControl.fillStyle = element.colour;
+    ctxControl.fillRect(element.left, element.top, element.width, element.height);
+});
 
 function won(){
     for(var h = 0; h < currentBoard.length; h++){
@@ -177,6 +246,17 @@ function movePlayer(move){
     }
     if (moved){
         draw();
+        if (won()){
+            currentLevelId++;
+            if (currentLevelId >= levels.length){
+                alert("That was last level, thank you for playing!");
+            }
+            else{
+                alert("Well done!");
+                setLevel();
+                draw();
+            }
+        }
     }
 }
 
@@ -202,17 +282,6 @@ function keyDownHandler(e) {
     }
     if (direction !== null) {
         movePlayer(direction);
-        if (won()){
-            currentLevelId++;
-            if (currentLevelId >= levels.length){
-                alert("That was last level, thank you for playing!");
-            }
-            else{
-                alert("Well done!");
-                setLevel();
-                draw();
-            }
-        }
     }
 }
 
