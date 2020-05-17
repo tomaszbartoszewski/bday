@@ -51,18 +51,20 @@ class FieldLocation{
 }
 
 levels = [];
-currentLevelId = 0;
+currentLevelId = 9;
 currentBoard = [0][0];
 squareSize = 40;
 
 function loadLevels(){
     mapsLines = maps.split('\n');
-    board=[];
     var lineNumber = 0;
     var levelId = 0;
     while(lineNumber < mapsLines.length){
+        code = mapsLines[lineNumber];
+        lineNumber++;
         size = mapsLines[lineNumber].split(' ');
         lineNumber++;
+        board=[];
         width = parseInt(size[0]);
         height = parseInt(size[1]);
         for(var h = 0; h < height; h++){
@@ -91,8 +93,8 @@ function setLevel(){
 }
 
 function getPlayerPosition(){
-    for(var h = 0; h < boardToCopy.length; h++){
-        for(var w = 0; w < boardToCopy[h].length; w++){
+    for(var h = 0; h < currentBoard.length; h++){
+        for(var w = 0; w < currentBoard[h].length; w++){
             if ((currentBoard[h][w] & fieldValue.player) == fieldValue.player){
                 return new FieldLocation(w, h);
             }
@@ -101,6 +103,7 @@ function getPlayerPosition(){
 }
 
 function draw(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     for(var h = 0; h < currentBoard.length; h++){
         for(var w = 0; w < currentBoard[h].length; w++){
             ctx.beginPath();
@@ -110,6 +113,17 @@ function draw(){
             ctx.closePath();
         }
     }
+}
+
+function won(){
+    for(var h = 0; h < currentBoard.length; h++){
+        for(var w = 0; w < currentBoard[h].length; w++){
+            if (currentBoard[h][w] == fieldValue.box){
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function tryMove(playerPosition, destination, behindDestination){
@@ -188,6 +202,17 @@ function keyDownHandler(e) {
     }
     if (direction !== null) {
         movePlayer(direction);
+        if (won()){
+            currentLevelId++;
+            if (currentLevelId >= levels.length){
+                alert("That was last level, thank you for playing!");
+            }
+            else{
+                alert("Well done!");
+                setLevel();
+                draw();
+            }
+        }
     }
 }
 
