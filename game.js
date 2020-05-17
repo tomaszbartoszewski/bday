@@ -105,6 +105,9 @@ function setLevel(){
         }
     }
     currentLevel = new Level(level.levelId, copyBoard, level.code, level.squareSize, level.height, level.width);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
+    refreshButtonsLocation();
 }
 
 function getPlayerPosition(){
@@ -120,7 +123,8 @@ function getPlayerPosition(){
 
 function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
+    // ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
+    // refreshButtonsLocation();
     currentBoard = currentLevel.board;
     squareSize = currentLevel.squareSize;
     for(var h = 0; h < currentBoard.length; h++){
@@ -134,9 +138,16 @@ function draw(){
     }
 }
 
-var canvasControlLeft = canvasControl.offsetLeft + canvasControl.clientLeft,
-canvasControlTop = canvasControl.offsetTop + canvasControl.clientTop,
+var canvasControlLeft = 0,
+    canvasControlTop = 0,
     buttons = [];
+
+function refreshButtonsLocation(){
+    canvasControlLeft = canvasControl.offsetLeft + canvasControl.clientLeft;
+    canvasControlTop = canvasControl.offsetTop + canvasControl.clientTop;
+}
+
+refreshButtonsLocation();
 
 canvasControl.addEventListener('click', function(event) {
     var x = event.pageX - canvasControlLeft,
