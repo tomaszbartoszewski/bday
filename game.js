@@ -186,7 +186,8 @@ buttons.push({
     top: 150,
     left: 10,
     type: buttonType.move,
-    direction: moveDirection.left
+    direction: moveDirection.left,
+    imageSrc: 'images/ArrowLeft.png'
 });
 
 buttons.push({
@@ -196,7 +197,8 @@ buttons.push({
     top: 40,
     left: 120,
     type: buttonType.move,
-    direction: moveDirection.up
+    direction: moveDirection.up,
+    imageSrc: 'images/ArrowUp.png'
 });
 
 buttons.push({
@@ -206,7 +208,8 @@ buttons.push({
     top: 150,
     left: 120,
     type: buttonType.move,
-    direction: moveDirection.down
+    direction: moveDirection.down,
+    imageSrc: 'images/ArrowDown.png'
 });
 
 buttons.push({
@@ -216,7 +219,8 @@ buttons.push({
     top: 150,
     left: 230,
     type: buttonType.move,
-    direction: moveDirection.right
+    direction: moveDirection.right,
+    imageSrc: 'images/ArrowRight.png'
 });
 
 buttons.push({
@@ -240,8 +244,17 @@ buttons.push({
 });
 
 buttons.forEach(function(element) {
-    ctxControl.fillStyle = element.colour;
-    ctxControl.fillRect(element.left, element.top, element.width, element.height);
+    if (element.type === buttonType.move){
+        var img = new Image();
+        img.onload = function() {
+            ctxControl.drawImage(img, element.left, element.top, element.width, element.height);
+        };
+        img.src = element.imageSrc;
+    }
+    else{
+        ctxControl.fillStyle = element.colour;
+        ctxControl.fillRect(element.left, element.top, element.width, element.height);
+    }
 });
 
 function won(){
@@ -327,18 +340,22 @@ function keyDownHandler(e) {
     switch (event.key) {
         case "Down": // IE/Edge specific value
         case "ArrowDown":
+        case "s":
             direction = moveDirection.down;
             break;
         case "Up": // IE/Edge specific value
         case "ArrowUp":
+        case "w":
             direction = moveDirection.up;
             break;
         case "Left": // IE/Edge specific value
         case "ArrowLeft":
+        case "a":
             direction = moveDirection.left;
             break;
         case "Right": // IE/Edge specific value
         case "ArrowRight":
+        case "d":
             direction = moveDirection.right;
             break;
     }
