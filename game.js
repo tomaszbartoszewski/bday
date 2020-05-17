@@ -19,6 +19,12 @@ var moveDirection = {
     right: 4
 }
 
+var buttonType = {
+    move: 1,
+    restart: 2,
+    giveCode: 3
+}
+
 var fieldMap = {
     '#': fieldValue.wall,
     '@': fieldValue.player,
@@ -40,11 +46,13 @@ var colourMap = {
 }
 
 class Level{
-  constructor(levelId, board, code, squareSize) {
+  constructor(levelId, board, code, squareSize, height, width) {
     this.levelId = levelId;
     this.board = board;
     this.code = code;
     this.squareSize = squareSize;
+    this.height = height;
+    this.width = width;
   }
 }
 
@@ -57,8 +65,7 @@ class FieldLocation{
 
 levels = [];
 currentLevelId = 0;
-currentBoard = [0][0];
-squareSize = 50;
+currentLevel = null;
 
 function loadLevels(){
     mapsLines = maps.split('\n');
@@ -82,7 +89,7 @@ function loadLevels(){
             board.push(lineFields);
             lineNumber++;
         }
-        levels.push(new Level(levelId, board, code, squareSize));
+        levels.push(new Level(levelId, board, code, squareSize, height, width));
         levelId++;
     }
 }
@@ -90,17 +97,18 @@ function loadLevels(){
 function setLevel(){
     level = levels[currentLevelId];
     boardToCopy = level.board;
-    squareSize = level.squareSize;
-    currentBoard = [];
+    copyBoard = [];
     for(var h = 0; h < boardToCopy.length; h++){
-        currentBoard.push([]);
+        copyBoard.push([]);
         for(var w = 0; w < boardToCopy[h].length; w++){
-            currentBoard[h].push(boardToCopy[h][w]);
+            copyBoard[h].push(boardToCopy[h][w]);
         }
     }
+    currentLevel = new Level(level.levelId, copyBoard, level.code, level.squareSize, level.height, level.width);
 }
 
 function getPlayerPosition(){
+    currentBoard = currentLevel.board;
     for(var h = 0; h < currentBoard.length; h++){
         for(var w = 0; w < currentBoard[h].length; w++){
             if ((currentBoard[h][w] & fieldValue.player) == fieldValue.player){
@@ -112,10 +120,13 @@ function getPlayerPosition(){
 
 function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
+    currentBoard = currentLevel.board;
+    squareSize = currentLevel.squareSize;
     for(var h = 0; h < currentBoard.length; h++){
         for(var w = 0; w < currentBoard[h].length; w++){
             ctx.beginPath();
-            ctx.rect(w*squareSize, h*squareSize, squareSize, squareSize);
+            ctx.rect(w * squareSize, h * squareSize, squareSize, squareSize);
             ctx.fillStyle = colourMap[currentBoard[h][w]];
             ctx.fill();
             ctx.closePath();
@@ -131,60 +142,99 @@ canvasControl.addEventListener('click', function(event) {
     var x = event.pageX - canvasControlLeft,
         y = event.pageY - canvasControlTop;
 
-    // Collision detection between clicked offset and element.
     buttons.forEach(function(button) {
         if (y > button.top && y < button.top + button.height
             && x > button.left && x < button.left + button.width) {
-            movePlayer(button.direction);
+            if (button.type === buttonType.move){
+                movePlayer(button.direction);
+            }
+            else if (button.type === buttonType.restart){
+                setLevel();
+                draw();
+            }
+            else if (button.type === buttonType.giveCode){
+                var code = prompt("Please enter level code:", "One");
+                if (code !== null && code !== "") {
+                    for (var i = 0; i < levels.length; i++){
+                        if (code.toUpperCase() === levels[i].code.toUpperCase()){
+                            currentLevelId = i;
+                            setLevel();
+                            draw();
+                        }
+                    }
+                }
+            }
         }
     });
-
 }, false);
 
-// Add element.
 buttons.push({
-    colour: '#05EFFF',
+    colour: "#006600",
     width: 100,
     height: 100,
     top: 150,
-    left: 90,
+    left: 10,
+    type: buttonType.move,
     direction: moveDirection.left
 });
 
 buttons.push({
-    colour: '#05EFFF',
+    colour: "#006600",
     width: 100,
     height: 100,
     top: 40,
-    left: 200,
+    left: 120,
+    type: buttonType.move,
     direction: moveDirection.up
 });
 
 buttons.push({
-    colour: '#05EFFF',
+    colour: "#006600",
     width: 100,
     height: 100,
     top: 150,
-    left: 200,
+    left: 120,
+    type: buttonType.move,
     direction: moveDirection.down
 });
 
 buttons.push({
-    colour: '#05EFFF',
+    colour: "#006600",
     width: 100,
     height: 100,
     top: 150,
-    left: 310,
+    left: 230,
+    type: buttonType.move,
     direction: moveDirection.right
 });
 
-// Render elements.
+buttons.push({
+    colour: "#0095DD",
+    width: 100,
+    height: 100,
+    top: 40,
+    left: 400,
+    type: buttonType.restart,
+    direction: null
+});
+
+buttons.push({
+    colour: "#000099",
+    width: 100,
+    height: 100,
+    top: 150,
+    left: 400,
+    type: buttonType.giveCode,
+    direction: null
+});
+
 buttons.forEach(function(element) {
     ctxControl.fillStyle = element.colour;
     ctxControl.fillRect(element.left, element.top, element.width, element.height);
 });
 
 function won(){
+    currentBoard = currentLevel.board;
     for(var h = 0; h < currentBoard.length; h++){
         for(var w = 0; w < currentBoard[h].length; w++){
             if (currentBoard[h][w] == fieldValue.box){
@@ -196,6 +246,7 @@ function won(){
 }
 
 function tryMove(playerPosition, destination, behindDestination){
+    currentBoard = currentLevel.board;
     var destinationFieldValue = currentBoard[destination.row][destination.column];
     if (destinationFieldValue == fieldValue.wall)
         return false;
@@ -252,8 +303,8 @@ function movePlayer(move){
                 alert("That was last level, thank you for playing!");
             }
             else{
-                alert("Well done!");
                 setLevel();
+                alert("Well done! Code for next level is: " + currentLevel.code);
                 draw();
             }
         }
