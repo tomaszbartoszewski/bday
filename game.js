@@ -302,7 +302,11 @@ function tryMove(playerPosition, destination, behindDestination){
     return [];
 }
 
-function movePlayer(move){
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function movePlayer(move){
     moved = false;
     playerPosition = getPlayerPosition();
     switch (move) {
@@ -330,6 +334,7 @@ function movePlayer(move){
     if (fieldsChanged.length > 0){
         drawChanges(fieldsChanged);
         if (won()){
+            await sleep(200);
             currentLevelId++;
             if (currentLevelId >= levels.length){
                 alert("That was last level, thank you for playing!");
