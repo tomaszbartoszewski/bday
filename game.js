@@ -35,14 +35,14 @@ var fieldMap = {
     ' ': fieldValue.empty
 }
 
-var colourMap = {
-    [fieldValue.wall]: "#006600",
-    [fieldValue.player]: "#0095DD",
-    [fieldValue.player | fieldValue.goal]: "#000099",
-    [fieldValue.box]: "#996633",
-    [fieldValue.box | fieldValue.goal]: "#663300",
-    [fieldValue.goal]: "#ff0000",
-    [fieldValue.empty]: "#ffbf00"
+var imageMap = {
+    [fieldValue.wall]: "images/Wall.png",
+    [fieldValue.player]: "images/Katrina.png",
+    [fieldValue.player | fieldValue.goal]: "images/KatrinaGoal.png",
+    [fieldValue.box]: "images/Box.png",
+    [fieldValue.box | fieldValue.goal]: "images/BoxGoal.png",
+    [fieldValue.goal]: "images/Goal.png",
+    [fieldValue.empty]: "images/Floor.png"
 }
 
 class Level{
@@ -121,19 +121,31 @@ function getPlayerPosition(){
     }
 }
 
-function draw(){
+function createElement(w, h, squareSize, source){
+    var img = new Image();
+    img.onload = function() {
+        ctx.drawImage(img, w * squareSize, h * squareSize, squareSize, squareSize);
+    };
+    img.src = source;
+}
+
+function drawChanges(fieldsChanged){
+    currentBoard = currentLevel.board;
+    squareSize = currentLevel.squareSize;
+    for(var f = 0; f < fieldsChanged.length; f++){
+        field = fieldsChanged[f];
+        source = imageMap[currentBoard[field.row][field.column]];
+        createElement(field.column, field.row, squareSize, source);
+    }
+}
+
+function drawFullBoard(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
-    // refreshButtonsLocation();
     currentBoard = currentLevel.board;
     squareSize = currentLevel.squareSize;
     for(var h = 0; h < currentBoard.length; h++){
         for(var w = 0; w < currentBoard[h].length; w++){
-            ctx.beginPath();
-            ctx.rect(w * squareSize, h * squareSize, squareSize, squareSize);
-            ctx.fillStyle = colourMap[currentBoard[h][w]];
-            ctx.fill();
-            ctx.closePath();
+            createElement(w, h, squareSize, imageMap[currentBoard[h][w]]);
         }
     }
 }
@@ -161,7 +173,7 @@ canvasControl.addEventListener('click', function(event) {
             }
             else if (button.type === buttonType.restart){
                 setLevel();
-                draw();
+                drawFullBoard();
             }
             else if (button.type === buttonType.giveCode){
                 var code = prompt("Please enter level code:", "One");
@@ -170,7 +182,7 @@ canvasControl.addEventListener('click', function(event) {
                         if (code.toUpperCase() === levels[i].code.toUpperCase()){
                             currentLevelId = i;
                             setLevel();
-                            draw();
+                            drawFullBoard();
                         }
                     }
                 }
@@ -230,7 +242,8 @@ buttons.push({
     top: 40,
     left: 400,
     type: buttonType.restart,
-    direction: null
+    direction: null,
+    imageSrc: 'images/Refresh.png'
 });
 
 buttons.push({
@@ -240,21 +253,16 @@ buttons.push({
     top: 150,
     left: 400,
     type: buttonType.giveCode,
-    direction: null
+    direction: null,
+    imageSrc: 'images/Code.png'
 });
 
 buttons.forEach(function(element) {
-    if (element.type === buttonType.move){
-        var img = new Image();
-        img.onload = function() {
-            ctxControl.drawImage(img, element.left, element.top, element.width, element.height);
-        };
-        img.src = element.imageSrc;
-    }
-    else{
-        ctxControl.fillStyle = element.colour;
-        ctxControl.fillRect(element.left, element.top, element.width, element.height);
-    }
+    var img = new Image();
+    img.onload = function() {
+        ctxControl.drawImage(img, element.left, element.top, element.width, element.height);
+    };
+    img.src = element.imageSrc;
 });
 
 function won(){
@@ -273,25 +281,25 @@ function tryMove(playerPosition, destination, behindDestination){
     currentBoard = currentLevel.board;
     var destinationFieldValue = currentBoard[destination.row][destination.column];
     if (destinationFieldValue == fieldValue.wall)
-        return false;
+        return [];
     if (destinationFieldValue == fieldValue.empty || destinationFieldValue == fieldValue.goal)
     {
         currentBoard[playerPosition.row][playerPosition.column] &= ~fieldValue.player;
         currentBoard[destination.row][destination.column] |= fieldValue.player;
-        return true;
+        return [playerPosition, destination];
     }
     else if ((destinationFieldValue & fieldValue.box) == fieldValue.box)
     {
         var valueBehind = currentBoard[behindDestination.row][behindDestination.column];
         if (valueBehind == fieldValue.wall || (valueBehind & fieldValue.box) == fieldValue.box)
-            return false;
+            return [];
         currentBoard[behindDestination.row][behindDestination.column] |= fieldValue.box;
         currentBoard[playerPosition.row][playerPosition.column] &= ~fieldValue.player;
         currentBoard[destination.row][destination.column] = 
             (currentBoard[destination.row][destination.column] | fieldValue.player) & ~fieldValue.box;
-        return true;
+        return [playerPosition, destination, behindDestination];
     }
-    return false;
+    return [];
 }
 
 function movePlayer(move){
@@ -299,37 +307,37 @@ function movePlayer(move){
     playerPosition = getPlayerPosition();
     switch (move) {
         case moveDirection.up:
-            moved = tryMove(playerPosition,
-                            new FieldLocation(playerPosition.column, playerPosition.row - 1),
-                            new FieldLocation(playerPosition.column, playerPosition.row - 2));
+            fieldsChanged = tryMove(playerPosition,
+                new FieldLocation(playerPosition.column, playerPosition.row - 1),
+                new FieldLocation(playerPosition.column, playerPosition.row - 2));
             break;
         case moveDirection.down:
-            moved = tryMove(playerPosition,
-                            new FieldLocation(playerPosition.column, playerPosition.row + 1),
-                            new FieldLocation(playerPosition.column, playerPosition.row + 2));
+            fieldsChanged = tryMove(playerPosition,
+                new FieldLocation(playerPosition.column, playerPosition.row + 1),
+                new FieldLocation(playerPosition.column, playerPosition.row + 2));
             break;
         case moveDirection.left:
-            moved = tryMove(playerPosition,
-                            new FieldLocation(playerPosition.column - 1, playerPosition.row),
-                            new FieldLocation(playerPosition.column - 2, playerPosition.row));
+            fieldsChanged = tryMove(playerPosition,
+                new FieldLocation(playerPosition.column - 1, playerPosition.row),
+                new FieldLocation(playerPosition.column - 2, playerPosition.row));
             break;
         case moveDirection.right:
-            moved = tryMove(playerPosition,
-                            new FieldLocation(playerPosition.column + 1, playerPosition.row),
-                            new FieldLocation(playerPosition.column + 2, playerPosition.row));
+            fieldsChanged = tryMove(playerPosition,
+                new FieldLocation(playerPosition.column + 1, playerPosition.row),
+                new FieldLocation(playerPosition.column + 2, playerPosition.row));
             break;
     }
-    if (moved){
-        draw();
+    if (fieldsChanged.length > 0){
+        drawChanges(fieldsChanged);
         if (won()){
             currentLevelId++;
             if (currentLevelId >= levels.length){
                 alert("That was last level, thank you for playing!");
             }
             else{
+                alert("Well done! Code for next level is: " + levels[currentLevelId].code);
                 setLevel();
-                alert("Well done! Code for next level is: " + currentLevel.code);
-                draw();
+                drawFullBoard();
             }
         }
     }
@@ -369,4 +377,4 @@ setLevel();
 
 document.addEventListener("keydown", keyDownHandler, false);
 
-draw();
+drawFullBoard();
