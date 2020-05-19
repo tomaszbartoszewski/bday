@@ -326,7 +326,7 @@ async function movePlayer(move){
     if (fieldsChanged.length > 0){
         drawChanges(fieldsChanged);
         if (won()){
-            await sleep(200);
+            await sleep(300);
             currentLevelId++;
             if (currentLevelId >= levels.length){
                 alert("That was last level, thank you for playing!");
