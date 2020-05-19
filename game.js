@@ -257,14 +257,6 @@ buttons.push({
     imageSrc: 'images/Code.png'
 });
 
-buttons.forEach(function(element) {
-    var img = new Image();
-    img.onload = function() {
-        ctxControl.drawImage(img, element.left, element.top, element.width, element.height);
-    };
-    img.src = element.imageSrc;
-});
-
 function won(){
     currentBoard = currentLevel.board;
     for(var h = 0; h < currentBoard.length; h++){
@@ -377,9 +369,24 @@ function keyDownHandler(e) {
     }
 }
 
-loadLevels();
-setLevel();
+async function gameStart(){
+    var entryScreen = new Image();
+    entryScreen.onload = function() {
+        ctx.drawImage(entryScreen, 0, 0, 500, 500);
+    };
+    entryScreen.src = "images/Entry.png";
+    await sleep(3000);
+    loadLevels();
+    setLevel();
+    document.addEventListener("keydown", keyDownHandler, false);
+    buttons.forEach(function(element) {
+        var img = new Image();
+        img.onload = function() {
+            ctxControl.drawImage(img, element.left, element.top, element.width, element.height);
+        };
+        img.src = element.imageSrc;
+    });
+    drawFullBoard();
+}
 
-document.addEventListener("keydown", keyDownHandler, false);
-
-drawFullBoard();
+gameStart();
