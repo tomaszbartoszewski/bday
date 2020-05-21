@@ -4,6 +4,9 @@ var ctx = canvas.getContext("2d");
 var canvasControl = document.getElementById("controlCanvas");
 var ctxControl = canvasControl.getContext("2d");
 
+var levelDetailsCanvas = document.getElementById("levelDetailsCanvas");
+var ctxLevelDetailsCanvas = levelDetailsCanvas.getContext("2d");
+
 var fieldValue = {
     empty: 0,
     wall: 1,
@@ -148,6 +151,7 @@ function drawFullBoard(){
             createElement(w, h, squareSize, imageMap[currentBoard[h][w]]);
         }
     }
+    drawLevelDetails();
 }
 
 var canvasControlLeft = 0,
@@ -338,6 +342,13 @@ async function movePlayer(move){
             }
         }
     }
+}
+
+function drawLevelDetails() {
+    ctxLevelDetailsCanvas.clearRect(0, 0, levelDetailsCanvas.width, levelDetailsCanvas.height);
+    ctxLevelDetailsCanvas.font = "20px Rockwell";
+    ctxLevelDetailsCanvas.fillStyle = "#403B7D";
+    ctxLevelDetailsCanvas.fillText("Level Id: "+(currentLevelId + 1) + "   Level Code: " + levels[currentLevelId].code, 8, 20);
 }
 
 function keyDownHandler(e) {
