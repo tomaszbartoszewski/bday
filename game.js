@@ -25,7 +25,8 @@ var moveDirection = {
 var buttonType = {
     move: 1,
     restart: 2,
-    giveCode: 3
+    giveCode: 3,
+    revertMove: 4
 }
 
 var fieldMap = {
@@ -69,6 +70,7 @@ class FieldLocation{
 levels = [];
 currentLevelId = 0;
 currentLevel = null;
+currentLevelHistory = [];
 
 function loadLevels(){
     mapsLines = maps.split('\n');
@@ -97,17 +99,23 @@ function loadLevels(){
     }
 }
 
-function setLevel(){
-    level = levels[currentLevelId];
-    boardToCopy = level.board;
-    copyBoard = [];
+function copyBoard(boardToCopy){
+    copy = [];
     for(var h = 0; h < boardToCopy.length; h++){
-        copyBoard.push([]);
+        copy.push([]);
         for(var w = 0; w < boardToCopy[h].length; w++){
-            copyBoard[h].push(boardToCopy[h][w]);
+            copy[h].push(boardToCopy[h][w]);
         }
     }
-    currentLevel = new Level(level.levelId, copyBoard, level.code, level.squareSize, level.height, level.width);
+    return copy;
+}
+
+function setLevel(){
+    level = levels[currentLevelId];
+    board = copyBoard(level.board);
+    currentLevelHistory = [];
+    currentLevelHistory.push(copyBoard(level.board));
+    currentLevel = new Level(level.levelId, board, level.code, level.squareSize, level.height, level.width);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.canvas.height = currentLevel.height * currentLevel.squareSize;
     refreshButtonsLocation();
@@ -165,6 +173,16 @@ function refreshButtonsLocation(){
 
 refreshButtonsLocation();
 
+function revertMove(){
+    historyLength = currentLevelHistory.length;
+    if (historyLength > 1){
+        currentLevel.board = copyBoard(currentLevelHistory[historyLength - 2]);
+        currentLevelHistory.pop();
+        return true;
+    }
+    return false;
+}
+
 canvasControl.addEventListener('click', function(event) {
     var x = event.pageX - canvasControlLeft,
         y = event.pageY - canvasControlTop;
@@ -179,8 +197,13 @@ canvasControl.addEventListener('click', function(event) {
                 setLevel();
                 drawFullBoard();
             }
+            else if (button.type === buttonType.revertMove){
+                if (revertMove()){
+                    drawFullBoard();
+                }
+            }
             else if (button.type === buttonType.giveCode){
-                var code = prompt("Please enter level code:", "One");
+                var code = prompt("Please enter level code:");
                 if (code !== null && code !== "") {
                     for (var i = 0; i < levels.length; i++){
                         if (code.toUpperCase() === levels[i].code.toUpperCase()){
@@ -196,7 +219,6 @@ canvasControl.addEventListener('click', function(event) {
 }, false);
 
 buttons.push({
-    colour: "#006600",
     width: 100,
     height: 100,
     top: 150,
@@ -207,7 +229,6 @@ buttons.push({
 });
 
 buttons.push({
-    colour: "#006600",
     width: 100,
     height: 100,
     top: 40,
@@ -218,7 +239,6 @@ buttons.push({
 });
 
 buttons.push({
-    colour: "#006600",
     width: 100,
     height: 100,
     top: 150,
@@ -229,7 +249,16 @@ buttons.push({
 });
 
 buttons.push({
-    colour: "#006600",
+    width: 100,
+    height: 100,
+    top: 40,
+    left: 230,
+    type: buttonType.revertMove,
+    direction: null,
+    imageSrc: 'images/Revert.png'
+});
+
+buttons.push({
     width: 100,
     height: 100,
     top: 150,
@@ -240,7 +269,6 @@ buttons.push({
 });
 
 buttons.push({
-    colour: "#0095DD",
     width: 100,
     height: 100,
     top: 40,
@@ -251,7 +279,6 @@ buttons.push({
 });
 
 buttons.push({
-    colour: "#000099",
     width: 100,
     height: 100,
     top: 150,
@@ -329,6 +356,7 @@ async function movePlayer(move){
     }
     if (fieldsChanged.length > 0){
         drawChanges(fieldsChanged);
+        currentLevelHistory.push(copyBoard(currentLevel.board));
         if (won()){
             await sleep(300);
             currentLevelId++;
